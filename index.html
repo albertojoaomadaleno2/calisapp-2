@@ -119,4 +119,35 @@ function openWorkout(id, name) {
     let timeLeft = 7;
     txt.textContent = timeLeft;
     playBip(440, 0.1);
-    
+
+    timerObj = setInterval(() => {
+        timeLeft--;
+        txt.textContent = timeLeft;
+        if (timeLeft > 0) playBip(500, 0.05);
+        if(timeLeft <= 0) {
+            clearInterval(timerObj);
+            txt.style.display = 'none';
+            playBip(880, 0.3);
+        }
+    }, 1000);
+}
+
+function markDone() {
+    if(!state.done.includes(activeExId)) state.done.push(activeExId);
+    save(); render(); closeWorkout();
+}
+
+function startRest() {
+    let s = 60;
+    const t = setInterval(() => {
+        s--; document.getElementById('timer-display').textContent = `REPOS : ${s}s`;
+        if(s<=0){ clearInterval(t); playBip(600, 0.5); }
+    }, 1000);
+}
+
+function closeWorkout() { clearInterval(timerObj); document.getElementById('modal-workout').classList.remove('open'); }
+function save() { localStorage.setItem('calis_pro_db', JSON.stringify(state)); }
+render();
+</script>
+</body>
+</html>
