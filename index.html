@@ -12,12 +12,9 @@
         :root { --black: #0a0a0a; --white: #f5f0e8; --accent: #e8ff47; --gray: #888; --card: #141414; --border: #222; --success: #2ecc71; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: var(--black); color: var(--white); font-family: 'DM Sans', sans-serif; padding-bottom: 30px; }
-        
-        /* BARRE DE PROGRESSION GLOBALE (EN HAUT) */
         .progress-fixed { position: fixed; top: 0; left: 0; width: 100%; height: 6px; background: #222; z-index: 1000; }
         #global-bar-fill { width: 0%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: width 0.5s ease; }
         #global-percent { position: fixed; top: 10px; right: 20px; font-family: 'Bebas Neue'; color: var(--accent); font-size: 20px; z-index: 1000; }
-
         header { padding: 60px 25px 20px; }
         .title-main { font-family: 'Bebas Neue', sans-serif; font-size: 55px; line-height: 0.9; text-transform: uppercase; }
         .planning-card { background: var(--card); border-radius: 20px; padding: 20px; margin: 0 20px 30px; border: 1px solid var(--border); }
@@ -35,7 +32,6 @@
         .checkbox { width: 26px; height: 26px; border: 2px solid var(--accent); border-radius: 8px; flex-shrink: 0; }
         .card.done .checkbox { background: var(--success); border-color: var(--success); display: flex; align-items: center; justify-content: center; }
         .card.done .checkbox::after { content: '✓'; color: var(--black); font-weight: bold; }
-
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--black); z-index: 10000; display: none; flex-direction: column; padding: 40px 25px; }
         .modal.open { display: flex; }
         .modal-media { width: 100%; aspect-ratio: 1; background: #000; border-radius: 20px; margin-bottom: 20px; position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
@@ -46,31 +42,19 @@
     </style>
 </head>
 <body>
-
 <div class="progress-fixed"><div id="global-bar-fill"></div></div>
 <div id="global-percent">0%</div>
-
 <header><h1 class="title-main">MON<br>PLANNING.</h1></header>
-
-<div class="planning-card">
-    <div class="planning-title">JOURS D'ENTRAÎNEMENT</div>
-    <div class="days-row" id="day-row"></div>
-</div>
-
+<div class="planning-card"><div class="planning-title">JOURS D'ENTRAÎNEMENT</div><div class="days-row" id="day-row"></div></div>
 <div class="nav-weeks" id="week-nav"></div>
 <div id="weeks-container"></div>
-
 <div id="modal-workout" class="modal">
     <div style="text-align:right; color:white; font-size:40px; margin-bottom:10px" onclick="closeWorkout()">×</div>
     <div class="modal-media"><div id="countdown-text">7</div><div id="m-media"></div></div>
     <h2 id="m-name" style="font-family:'Bebas Neue'; font-size:32px; text-align: center; margin-bottom: 10px;"></h2>
     <div id="timer-display" style="text-align:center; color:var(--accent); font-family:'Bebas Neue'; font-size:28px; height:40px;"></div>
-    <div style="margin-top:auto;">
-        <button class="btn-action btn-done" onclick="markDone()">VALIDER LA SÉRIE</button>
-        <button class="btn-action btn-repos" onclick="startRest()">REPOS (60S)</button>
-    </div>
+    <div style="margin-top:auto;"><button class="btn-action btn-done" id="btn-main-action" onclick="toggleTask()">VALIDER LA SÉRIE</button><button class="btn-action btn-repos" onclick="startRest()">REPOS (60S)</button></div>
 </div>
-
 <script>
 const program = {
     1: { A: [{id:'s1a1', n:'Pompes Genoux', s:'3x12'}, {id:'s1a2', n:'Squats', s:'3x15'}], B: [{id:'s1b1', n:'Planche', s:'3x30s'}, {id:'s1b2', n:'Dips Banc', s:'3x10'}] },
@@ -91,8 +75,9 @@ function playBip(f, d) {
 }
 
 function updateProgressBar() {
-    const totalEx = program[state.currentWeek].A.length + program[state.currentWeek].B.length;
-    const doneEx = [...program[state.currentWeek].A, ...program[state.currentWeek].B].filter(ex => state.done.includes(ex.id)).length;
+    const weekData = program[state.currentWeek];
+    const totalEx = weekData.A.length + weekData.B.length;
+    const doneEx = [...weekData.A, ...weekData.B].filter(ex => state.done.includes(ex.id)).length;
     const percent = Math.round((doneEx / totalEx) * 100);
     document.getElementById('global-bar-fill').style.width = percent + '%';
     document.getElementById('global-percent').textContent = percent + '%';
@@ -109,42 +94,40 @@ function render() {
 }
 
 function toggleDay(d){ if(state.activeDays.includes(d)) state.activeDays = state.activeDays.filter(x => x !== d); else state.activeDays.push(d); save(); render(); }
-function createCard(ex){ return `<div class="card ${state.done.includes(ex.id)?'done':''}" onclick="openWorkout('${ex.id}', '${ex.n}')"><div class="checkbox"></div><div class="ex-info"><b>${ex.n}</b><small>${ex.sets || ex.s}</small></div></div>`; }
+function createCard(ex){ return `<div class="card ${state.done.includes(ex.id)?'done':''}" onclick="openWorkout('${ex.id}', '${ex.n}')"><div class="checkbox"></div><div class="ex-info"><b>${ex.n}</b><small>${ex.s}</small></div></div>`; }
 
 function openWorkout(id, name) {
     activeExId = id; document.getElementById('m-name').textContent = name;
+    const btn = document.getElementById('btn-main-action');
+    const isDone = state.done.includes(id);
+    btn.textContent = isDone ? "DÉCOCHER L'EXERCICE" : "VALIDER LA SÉRIE";
+    btn.style.background = isDone ? "#ff4747" : "#e8ff47";
     document.getElementById('modal-workout').classList.add('open');
     const txt = document.getElementById('countdown-text');
-    txt.style.display = 'block';
-    let timeLeft = 7;
-    txt.textContent = timeLeft;
+    txt.style.display = 'block'; let timeLeft = 7; txt.textContent = timeLeft;
     playBip(440, 0.1);
-
     timerObj = setInterval(() => {
-        timeLeft--;
-        txt.textContent = timeLeft;
+        timeLeft--; txt.textContent = timeLeft;
         if (timeLeft > 0) playBip(500, 0.05);
-        if(timeLeft <= 0) {
-            clearInterval(timerObj);
-            txt.style.display = 'none';
-            playBip(880, 0.3);
-        }
+        if(timeLeft <= 0) { clearInterval(timerObj); txt.style.display = 'none'; playBip(880, 0.3); }
     }, 1000);
 }
 
-function markDone() {
-    if(!state.done.includes(activeExId)) state.done.push(activeExId);
+function toggleTask() {
+    if(state.done.includes(activeExId)) {
+        state.done = state.done.filter(id => id !== activeExId);
+    } else {
+        state.done.push(activeExId);
+    }
     save(); render(); closeWorkout();
 }
 
 function startRest() {
-    let s = 60;
-    const t = setInterval(() => {
+    let s = 60; const t = setInterval(() => {
         s--; document.getElementById('timer-display').textContent = `REPOS : ${s}s`;
         if(s<=0){ clearInterval(t); playBip(600, 0.5); }
     }, 1000);
 }
-
 function closeWorkout() { clearInterval(timerObj); document.getElementById('modal-workout').classList.remove('open'); }
 function save() { localStorage.setItem('calis_pro_db', JSON.stringify(state)); }
 render();
