@@ -13,21 +13,47 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: var(--black); color: var(--white); font-family: 'DM Sans', sans-serif; padding-bottom: 30px; }
         
-        /* BARRE DE PROGRESSION GLOBALE EN HAUT */
         .progress-fixed { position: fixed; top: 0; left: 0; width: 100%; height: 6px; background: #222; z-index: 1000; }
         #global-bar-fill { width: 0%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: width 0.5s ease; }
         #global-percent { position: fixed; top: 10px; right: 20px; font-family: 'Bebas Neue'; color: var(--accent); font-size: 20px; z-index: 1000; }
 
         header { padding: 60px 25px 20px; }
         .title-main { font-family: 'Bebas Neue', sans-serif; font-size: 55px; line-height: 0.9; text-transform: uppercase; }
+        
+        /* MODIFICATION : JOURS L'UN À CÔTÉ DE L'AUTRE AVEC DÉFILEMENT */
         .planning-card { background: var(--card); border-radius: 20px; padding: 20px; margin: 0 20px 30px; border: 1px solid var(--border); }
         .planning-title { color: var(--accent); font-family: 'Bebas Neue', sans-serif; font-size: 20px; margin-bottom: 15px; }
-        .days-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .day-toggle { width: 42px; height: 38px; border-radius: 10px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: var(--gray); cursor: pointer; }
+        
+        .days-row { 
+            display: flex; 
+            gap: 12px; 
+            overflow-x: auto; 
+            padding-bottom: 5px;
+            scrollbar-width: none; /* Cache barre sur Firefox */
+        }
+        .days-row::-webkit-scrollbar { display: none; } /* Cache barre sur Chrome/Safari */
+
+        .day-toggle { 
+            min-width: 55px; /* Largeur fixe pour chaque jour */
+            height: 45px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 13px; 
+            font-weight: bold; 
+            color: var(--gray); 
+            cursor: pointer;
+            flex-shrink: 0; /* Empêche les jours de s'écraser */
+        }
         .day-toggle.active { background: var(--accent); color: var(--black); border-color: var(--accent); }
+
         .nav-weeks { display: flex; gap: 10px; padding: 0 20px; margin-bottom: 30px; overflow-x: auto; scrollbar-width: none; }
+        .nav-weeks::-webkit-scrollbar { display: none; }
         .week-btn { padding: 12px 25px; border-radius: 30px; border: 1px solid var(--border); background: #111; color: var(--white); font-weight: bold; white-space: nowrap; }
         .week-btn.active { background: var(--white); color: var(--black); }
+
         .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--gray); margin: 0 25px 15px; text-transform: uppercase; }
         .exercise-list { padding: 0 20px; margin-bottom: 30px; }
         .card { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--border); }
@@ -55,7 +81,11 @@
 <div id="global-percent">0%</div>
 
 <header><h1 class="title-main">MON<br>PLANNING.</h1></header>
-<div class="planning-card"><div class="planning-title">JOURS D'ENTRAÎNEMENT</div><div class="day-row" id="day-row"></div></div>
+<div class="planning-card">
+    <div class="planning-title">JOURS D'ENTRAÎNEMENT</div>
+    <div class="days-row" id="day-row"></div>
+</div>
+
 <div class="nav-weeks" id="week-nav"></div>
 <div id="weeks-container"></div>
 
@@ -104,8 +134,9 @@ function render() {
     const weekData = program[state.currentWeek];
     container.innerHTML = `<div class="section-title">SESSION A</div><div class="exercise-list">${weekData.A.map(ex => createCard(ex)).join('')}</div><div class="section-title">SESSION B</div><div class="exercise-list">${weekData.B.map(ex => createCard(ex)).join('')}</div>`;
     document.getElementById('week-nav').innerHTML = [1,2,3,4].map(w => `<button class="week-btn ${state.currentWeek==w?'active':''}" onclick="state.currentWeek=${w};save();render();">Sem. ${w}</button>`).join('');
-    const days = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
-    document.getElementById('day-row').innerHTML = [1,2,3,4,5,6,0].map(d => `<div class="day-toggle ${state.activeDays.includes(d)?'active':''}" onclick="toggleDay(${d})">${days[d]}</div>`).join('');
+    const days = ['LUN','MAR','MER','JEU','VEN','SAM','DIM'];
+    const dayIds = [1, 2, 3, 4, 5, 6, 0];
+    document.getElementById('day-row').innerHTML = dayIds.map((id, idx) => `<div class="day-toggle ${state.activeDays.includes(id)?'active':''}" onclick="toggleDay(${id})">${days[idx]}</div>`).join('');
     updateProgressBar();
 }
 
@@ -117,7 +148,6 @@ function openWorkout(id, name) {
     const isDone = state.done.includes(id);
     const controls = document.getElementById('modal-controls');
     document.getElementById('modal-workout').classList.add('open');
-    
     const fill = document.getElementById('progress-bar-fill');
     const txt = document.getElementById('percent-display');
     
