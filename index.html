@@ -26,14 +26,14 @@
         .week-btn { padding: 12px 25px; border-radius: 30px; border: 1px solid var(--border); background: #111; color: var(--white); font-weight: bold; white-space: nowrap; }
         .week-btn.active { background: var(--white); color: var(--black); }
         .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--gray); margin: 0 25px 15px; text-transform: uppercase; }
-        .exercise-list { padding: 0 20px; margin-bottom: 30px; }
+        .exercise-list { padding: 0 20px; margin-bottom: 30px; min-height: 50px; }
         .card { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--border); }
         .card.done { border-color: var(--success); opacity: 0.7; }
         .checkbox { width: 26px; height: 26px; border: 2px solid var(--accent); border-radius: 8px; flex-shrink: 0; }
         .card.done .checkbox { background: var(--success); border-color: var(--success); display: flex; align-items: center; justify-content: center; }
         .card.done .checkbox::after { content: '✓'; color: var(--black); font-weight: bold; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--black); z-index: 10000; display: none; flex-direction: column; padding: 40px 25px; }
-        .modal.open { display: flex; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--black); z-index: 10000; display: flex; flex-direction: column; padding: 40px 25px; visibility: hidden; opacity: 0; transition: 0.3s; }
+        .modal.open { visibility: visible; opacity: 1; }
         .modal-media { width: 100%; aspect-ratio: 1; background: #000; border-radius: 20px; margin-bottom: 20px; position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
         #countdown-text { font-family: 'Bebas Neue'; font-size: 120px; color: var(--accent); }
         .btn-action { width: 100%; padding: 20px; border-radius: 15px; border: none; font-family: 'Bebas Neue'; font-size: 22px; margin-bottom: 10px; font-weight: bold; }
@@ -67,32 +67,18 @@ let state = JSON.parse(localStorage.getItem('calis_pro_db')) || { done: [], acti
 let audioCtx = null, timerObj = null, activeExId = null;
 
 function playBip(f, d) {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.connect(g); g.connect(audioCtx.destination);
-    o.frequency.value = f; g.gain.value = 0.1;
-    o.start(); o.stop(audioCtx.currentTime + d);
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.value = f; g.gain.value = 0.1;
+        o.start(); o.stop(audioCtx.currentTime + d);
+    } catch(e) {}
 }
 
 function updateProgressBar() {
     const weekData = program[state.currentWeek];
     const totalEx = weekData.A.length + weekData.B.length;
-    const doneEx = [...weekData.A, ...weekData.B].filter(ex => state.done.includes(ex.id)).length;
-    const percent = Math.round((doneEx / totalEx) * 100);
-    document.getElementById('global-bar-fill').style.width = percent + '%';
-    document.getElementById('global-percent').textContent = percent + '%';
-}
-
-function render() {
-    const container = document.getElementById('weeks-container');
-    const weekData = program[state.currentWeek];
-    container.innerHTML = `<div class="section-title">SESSION A</div><div class="exercise-list">${weekData.A.map(ex => createCard(ex)).join('')}</div><div class="section-title">SESSION B</div><div class="exercise-list">${weekData.B.map(ex => createCard(ex)).join('')}</div>`;
-    document.getElementById('week-nav').innerHTML = [1,2,3,4].map(w => `<button class="week-btn ${state.currentWeek===w?'active':''}" onclick="state.currentWeek=${w};save();render();">Sem. ${w}</button>`).join('');
-    const days = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
-    document.getElementById('day-row').innerHTML = [1,2,3,4,5,6,0].map(d => `<div class="day-toggle ${state.activeDays.includes(d)?'active':''}" onclick="toggleDay(${d})">${days[d]}</div>`).join('');
-    updateProgressBar();
-}
-
-function toggleDay(d){ if(state.activeDays.includes(d)) state.activeDays = state.
-    
+    const doneEx = [...weekData.A, ...weekData.B].filter(ex => state.done.includes(ex.id)).
+        
